@@ -25,10 +25,11 @@ export interface SidebarProps {
   onClose: () => void;
 }
 
-// PUBLIC_INTERFACE
+ // PUBLIC_INTERFACE
 /**
  * Persistent drawer containing primary navigation links.
  * Items are filtered by user roles when requiredRoles is provided.
+ * Note: Scheduler requires 'scheduler' or 'admin' role to appear.
  */
 const Sidebar: React.FC<SidebarProps> = ({ open }) => {
   const location = useLocation();

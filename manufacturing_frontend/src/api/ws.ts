@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import { getStoredAuth } from '../utils/storage';
 
@@ -31,7 +32,7 @@ function buildWsBase(): string {
 
 // PUBLIC_INTERFACE
 export function connectDashboardWS(handlers: WSHandlers): WebSocket {
-  /** Connect to dashboard real-time KPI stream using token (query) and tenant (query fallback). */
+  /** Connect to dashboard real-time KPI stream using token (query) and tenant (query). */
   const stored = getStoredAuth();
   const token = stored?.token || '';
   const tenant = stored?.tenantId || '';
@@ -106,6 +107,82 @@ export function useDashboardStream(onSnapshot: any) {
       }
     };
   }, [onSnapshot]);
+}
+
+// PUBLIC_INTERFACE
+export function connectSchedulerWS(handlers: WSHandlers, boardId: string = 'default'): WebSocket {
+  /** Connect to the collaborative scheduler stream (/ws/scheduler) with token, tenant, and board query. */
+  const stored = getStoredAuth();
+  const token = stored?.token || '';
+  const tenant = stored?.tenantId || '';
+
+  const base = buildWsBase();
+  const path = '/ws/scheduler';
+  const qs = new URLSearchParams();
+  if (token) qs.set('token', token);
+  if (tenant) qs.set('tenant', tenant);
+  if (boardId) qs.set('board', boardId);
+
+  const ws = new WebSocket(`${base}${path}?${qs.toString()}`);
+
+  ws.onopen = (e) => handlers.onOpen?.(e);
+  ws.onerror = (e) => handlers.onError?.(e);
+  ws.onclose = (e) => handlers.onClose?.(e);
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data as string);
+      handlers.onMessage?.(msg);
+    } catch {
+      handlers.onMessage?.(e.data);
+    }
+  };
+
+  return ws;
+}
+
+// PUBLIC_INTERFACE
+export function useSchedulerWS(onMessage: (msg: any) => void, boardId: string = 'default') {
+  /** React hook to subscribe to the scheduler board with auto-reconnect backoff. Provides raw messages for flexible UI updates. */
+  const attemptRef = React.useRef(0);
+  const wsRef = React.useRef<WebSocket | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const connect = () => {
+      const ws = connectSchedulerWS(
+        {
+          onOpen: () => {
+            attemptRef.current = 0;
+          },
+          onClose: () => {
+            if (cancelled) return;
+            const timeout = Math.min(10000, 500 * Math.pow(2, attemptRef.current++));
+            globalThis.setTimeout(connect, timeout);
+          },
+          onError: () => {
+            // noop, handled by onClose
+          },
+          onMessage: (msg: any) => {
+            onMessage(msg);
+          },
+        },
+        boardId,
+      );
+      wsRef.current = ws;
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      try {
+        wsRef.current?.close();
+      } catch {
+        // ignore
+      }
+    };
+  }, [boardId, onMessage]);
 }
 
 function normalizeSnapshot(raw: any): KpiSnapshot | null {
