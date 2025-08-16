@@ -15,6 +15,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 
 const drawerWidth = 240;
 
@@ -27,17 +28,19 @@ export interface SidebarProps {
 // PUBLIC_INTERFACE
 /**
  * Persistent drawer containing primary navigation links.
+ * Items are filtered by user roles when requiredRoles is provided.
  */
 const Sidebar: React.FC<SidebarProps> = ({ open }) => {
   const location = useLocation();
+  const { hasRole } = useAuth();
 
-  const navItems = [
+  const navItems: Array<{ to: string; label: string; icon: React.ReactNode; requiredRoles?: string[] }> = [
     { to: '/', label: 'Dashboard', icon: <DashboardIcon /> },
-    { to: '/production', label: 'Production', icon: <BuildIcon /> },
-    { to: '/inventory', label: 'Inventory', icon: <InventoryIcon /> },
-    { to: '/quality', label: 'Quality', icon: <FactCheckIcon /> },
-    { to: '/scheduler', label: 'Scheduler', icon: <ScheduleIcon /> },
-    { to: '/settings', label: 'Settings', icon: <SettingsIcon /> },
+    { to: '/production', label: 'Production', icon: <BuildIcon />, requiredRoles: ['production', 'admin'] },
+    { to: '/inventory', label: 'Inventory', icon: <InventoryIcon />, requiredRoles: ['inventory', 'admin'] },
+    { to: '/quality', label: 'Quality', icon: <FactCheckIcon />, requiredRoles: ['quality', 'admin'] },
+    { to: '/scheduler', label: 'Scheduler', icon: <ScheduleIcon />, requiredRoles: ['scheduler', 'admin'] },
+    { to: '/settings', label: 'Settings', icon: <SettingsIcon />, requiredRoles: ['admin'] },
   ];
 
   return (
@@ -53,20 +56,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
       <Toolbar />
       <Divider />
       <List>
-        {navItems.map((item) => {
-          const selected = location.pathname === item.to;
-          return (
-            <ListItemButton
-              key={item.to}
-              component={NavLink}
-              to={item.to}
-              selected={selected}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          );
-        })}
+        {navItems
+          .filter((item) => !item.requiredRoles || hasRole(item.requiredRoles))
+          .map((item) => {
+            const selected = location.pathname === item.to;
+            return (
+              <ListItemButton key={item.to} component={NavLink} to={item.to} selected={selected}>
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            );
+          })}
       </List>
     </Drawer>
   );
