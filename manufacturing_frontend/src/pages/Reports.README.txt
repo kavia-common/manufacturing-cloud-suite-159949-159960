@@ -1,0 +1,4 @@
+This placeholder file explains the Reports page implemented in src/pages/Reports.tsx.
+The page provides export buttons (CSV/Excel/PDF) for multiple report types and
+uses src/api/reports.ts which in turn uses downloadFile() from src/api/client.ts
+to perform authenticated, tenant-aware downloads.
