@@ -12,6 +12,10 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import ProtectedRoute from './routes/ProtectedRoute';
 import { useAuth } from './auth/AuthContext';
+import Admin from './pages/Admin';
+import Purchasing from './pages/Purchasing';
+import Reports from './pages/Reports';
+import RequireRole from './components/RequireRole';
 
 // PUBLIC_INTERFACE
 /**
@@ -82,6 +86,36 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Scheduler />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/purchasing"
+            element={
+              <ProtectedRoute>
+                <RequireRole required={['purchasing', 'admin']}>
+                  <Purchasing />
+                </RequireRole>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <RequireRole required={['reports', 'admin']}>
+                  <Reports />
+                </RequireRole>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <RequireRole required="admin">
+                  <Admin />
+                </RequireRole>
               </ProtectedRoute>
             }
           />

@@ -1,4 +1,4 @@
-/* eslint-env browser */
+ /* eslint-env browser */
 import { AuthResponse, MeResponse } from '../types/auth';
 import { getStoredAuth } from '../utils/storage';
 
@@ -98,6 +98,82 @@ export async function apiPost<T = unknown>(
 ): Promise<T> {
   /** Perform a POST request (authenticated by default). */
   return baseFetch<T>(path, { method: 'POST', body, headers, auth: opts?.auth ?? true });
+}
+
+// PUBLIC_INTERFACE
+export async function apiPut<T = unknown>(path: string, body?: any, headers?: Record<string, string>): Promise<T> {
+  /** Perform a PUT request (authenticated). */
+  return baseFetch<T>(path, { method: 'PUT', body, headers, auth: true });
+}
+
+// PUBLIC_INTERFACE
+export async function apiPatch<T = unknown>(path: string, body?: any, headers?: Record<string, string>): Promise<T> {
+  /** Perform a PATCH request (authenticated). */
+  return baseFetch<T>(path, { method: 'PATCH', body, headers, auth: true });
+}
+
+// PUBLIC_INTERFACE
+export async function apiDelete<T = unknown>(path: string, headers?: Record<string, string>): Promise<T> {
+  /** Perform a DELETE request (authenticated). */
+  return baseFetch<T>(path, { method: 'DELETE', headers, auth: true });
+}
+
+// PUBLIC_INTERFACE
+export async function downloadFile(
+  path: string,
+  filename: string,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET',
+  body?: any,
+  headers?: Record<string, string>,
+): Promise<void> {
+  /**
+   * Download a file (blob) from an authenticated endpoint and trigger a browser download.
+   * Automatically attaches Authorization and X-Tenant-ID headers from storage.
+   */
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const stored = getStoredAuth();
+
+  const finalHeaders: Record<string, string> = {
+    ...headers,
+  };
+  if (stored?.token) finalHeaders.Authorization = `Bearer ${stored.token}`;
+  if (stored?.tenantId) finalHeaders['X-Tenant-ID'] = stored.tenantId;
+
+  const resp = await globalThis.fetch(url, {
+    method,
+    headers: finalHeaders,
+    body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
+    credentials: 'include',
+  });
+  if (resp.status === 401) {
+    if (onUnauthorized) onUnauthorized();
+    throw new Error('Unauthorized');
+  }
+  if (!resp.ok) {
+    throw new Error(`Failed to download file (${resp.status})`);
+  }
+  const blob = await resp.blob();
+  const dlName = filename || guessFilenameFromResponse(resp) || 'download';
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = dlName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  globalThis.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+    document.body.removeChild(a);
+  }, 100);
+}
+
+function guessFilenameFromResponse(resp: Response): string | null {
+  const cd = resp.headers.get('Content-Disposition') || '';
+  const match = /filename\*?=([^;]+)/i.exec(cd);
+  if (match && match[1]) {
+    return decodeURIComponent(match[1].replace(/UTF-8''/i, '').replace(/["']/g, '').trim());
+  }
+  return null;
 }
 
 // PUBLIC_INTERFACE

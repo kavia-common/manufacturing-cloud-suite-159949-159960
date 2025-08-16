@@ -14,6 +14,9 @@ import InventoryIcon from '@mui/icons-material/Inventory2';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
@@ -41,6 +44,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
     { to: '/inventory', label: 'Inventory', icon: <InventoryIcon />, requiredRoles: ['inventory', 'admin'] },
     { to: '/quality', label: 'Quality', icon: <FactCheckIcon />, requiredRoles: ['quality', 'admin'] },
     { to: '/scheduler', label: 'Scheduler', icon: <ScheduleIcon />, requiredRoles: ['scheduler', 'admin'] },
+    { to: '/purchasing', label: 'Purchasing', icon: <ShoppingCartIcon />, requiredRoles: ['purchasing', 'admin'] },
+    { to: '/reports', label: 'Reports', icon: <AssessmentIcon />, requiredRoles: ['reports', 'admin'] },
+    { to: '/admin', label: 'Admin', icon: <AdminPanelSettingsIcon />, requiredRoles: ['admin'] },
     { to: '/settings', label: 'Settings', icon: <SettingsIcon />, requiredRoles: ['admin'] },
   ];
 
